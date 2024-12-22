@@ -31,66 +31,84 @@ async function run() {
 
     const recCollection = client.db("recDB").collection("recs");
     const userCollection = client.db("recDB").collection("users");
-//create new user
-app.post("/users", async (req, res) => {
-    const newUser = req.body;
-    //console.log("creating new user: ", newUser);
-    const result = await userCollection.insertOne(newUser);
-    res.send(result);
-  });
-  // getting users
-  app.get("/users", async (req, res) => {
-    const cursor = userCollection.find();
-    const result = await cursor.toArray();
-    res.send(result);
-  });
-  //get a data in the server
-  app.get("/user/:id", async (req, res) => {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) };
-    const result = await userCollection.findOne(query);
-    res.send(result);
-  });
-  //update a data in the server
-  app.put("/user/:id", async (req, res) => {
-    const id = req.params.id;
-    const filter = { _id: new ObjectId(id) };
-    const options = { upsert: true };
-    const updateUser = req.body;
-    const user = {
-      $set: {
-        email: updateUser.email,
-        password: updateUser.password,
-      },
-    };
-    const result = await userCollection.updateOne(filter, user, options);
-    res.send(result);
-  });
-  //delete a data from the server
-  app.delete("/user/:id", async (req, res) => {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) };
-    const result = await userCollection.deleteOne(query);
-    res.send(result);
-  });
-  //patch
-  app.patch("/user", async (req, res) => {
-    const email = req.body.email;
-    const filter = { email };
-    const updateDoc = {
-      $set: {
-        lastSignInTime: req?.body?.lastSignInTime,
-      },
-    };
-    const result = await userCollection.updateOne(filter, updateDoc);
-    res.send(result);
-  });
+
+    //========================================= Queries =========================================//
+    //getting data from the server
+    app.get("/queries", async (req, res) => {
+        const cursor = recCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+      });
+      // posting it to the server
+    app.post("/queries", async (req, res) => {
+        const newQuery = req.body;
+        console.log(newQuery);
+        const result = await recCollection.insertOne(newQuery);
+        res.send(result);
+      });
 
 
 
 
 
 
+
+
+      //========================================= USERS =========================================//
+    //create new user
+    app.post("/users", async (req, res) => {
+      const newUser = req.body;
+      //console.log("creating new user: ", newUser);
+      const result = await userCollection.insertOne(newUser);
+      res.send(result);
+    });
+    // getting users
+    app.get("/users", async (req, res) => {
+      const cursor = userCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    //get a data in the server
+    app.get("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.findOne(query);
+      res.send(result);
+    });
+    //update a data in the server
+    app.put("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateUser = req.body;
+      const user = {
+        $set: {
+          email: updateUser.email,
+          password: updateUser.password,
+        },
+      };
+      const result = await userCollection.updateOne(filter, user, options);
+      res.send(result);
+    });
+    //delete a data from the server
+    app.delete("/user/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await userCollection.deleteOne(query);
+      res.send(result);
+    });
+    //patch
+    app.patch("/user", async (req, res) => {
+      const email = req.body.email;
+      const filter = { email };
+      const updateDoc = {
+        $set: {
+          lastSignInTime: req?.body?.lastSignInTime,
+        },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
   } finally {
   }
 }
