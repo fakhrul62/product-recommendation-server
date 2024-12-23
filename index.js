@@ -124,7 +124,7 @@ async function run() {
       const email = req.query.email;
       let query = {};
       if (email) {
-        query = { user_email: email };
+        query = { current_user_email: email };
       }
       const cursor = recommendCollection.find(query);
       const result = await cursor.toArray();
@@ -136,11 +136,17 @@ async function run() {
       const result = await recommendCollection.findOne(query);
       res.send(result);
     });
-    // posting it to the server
-    app.post("/recommendations", async (req, res) => {
-      const newRecommendation = req.body;
-      const result = await recommendCollection.insertOne(newRecommendation);
-      res.send({ insertedId: result.insertedId });
+
+    //getting data from the server by email
+    app.get("/queries", async (req, res) => {
+      const email = req.query.email;
+      let query = {};
+      if (email) {
+        query = { user_email: email };
+      }
+      const cursor = recCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
     });
 
     //========================================= USERS =========================================//
