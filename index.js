@@ -50,6 +50,7 @@ async function run() {
 
     const recCollection = client.db("recDB").collection("recs");
     const userCollection = client.db("recDB").collection("users");
+    const recommendCollection = client.db("recDB").collection("recommend");
 
     //========================================= Queries =========================================//
     //getting data from the server
@@ -63,6 +64,15 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+    //home queries
+    app.get("/queries-home", async (req, res) => {
+      const result = await recCollection
+        .find()
+        .sort({ _id: -1 })
+        .limit(6)
+        .toArray();
+      res.send(result);
+    });
     // posting it to the server
     app.post("/queries", async (req, res) => {
       const newQuery = req.body;
@@ -70,11 +80,60 @@ async function run() {
       const result = await recCollection.insertOne(newQuery);
       res.send(result);
     });
-    app.get("/query/:id", async (req, res) => {
+    app.get("/queries/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await recCollection.findOne(query);
       res.send(result);
+    });
+    // Increment recommendationCount
+    app.patch("/queries/:id", async (req, res) => {
+      const id = req.params.id;
+      const incrementValue = req.body.increment || 1; // Default increment value is 1
+      try {
+        const filter = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $inc: { recommendationCount: incrementValue },
+        };
+        const result = await recCollection.updateOne(filter, updateDoc);
+        if (result.modifiedCount > 0) {
+          res.send({
+            message: "Recommendation count incremented successfully",
+            result,
+          });
+        } else {
+          res.status(404).send({ message: "Query not found" });
+        }
+      } catch (error) {
+        console.error("Error incrementing recommendationCount:", error);
+        res
+          .status(500)
+          .send({ message: "Failed to increment recommendation count" });
+      }
+    });
+
+    //========================================= RECOMMENDATIONS =========================================//
+    app.get("/recommendations", async (req, res) => {
+      const email = req.query.email;
+      let query = {};
+      if (email) {
+        query = { user_email: email };
+      }
+      const cursor = recommendCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/recommendations/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await recommendCollection.findOne(query);
+      res.send(result);
+    });
+    // posting it to the server
+    app.post("/recommendations", async (req, res) => {
+      const newRecommendation = req.body;
+      const result = await recommendCollection.insertOne(newRecommendation);
+      res.send({ insertedId: result.insertedId });
     });
 
     //========================================= USERS =========================================//
