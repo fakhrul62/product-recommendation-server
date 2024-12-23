@@ -137,17 +137,13 @@ async function run() {
       res.send(result);
     });
 
-    //getting data from the server by email
-    app.get("/queries", async (req, res) => {
-      const email = req.query.email;
-      let query = {};
-      if (email) {
-        query = { user_email: email };
-      }
-      const cursor = recCollection.find(query);
-      const result = await cursor.toArray();
+    // Add a new recommendation
+    app.post("/recommendations", async (req, res) => {
+      const newRecommendation = req.body;
+      const result = await recommendCollection.insertOne(newRecommendation);
       res.send(result);
     });
+    
     //delete a data from the server
     app.delete("/recommendations/:id", async (req, res) => {
       const id = req.params.id;
