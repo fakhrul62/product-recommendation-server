@@ -7,10 +7,29 @@ import "dotenv/config";
 
 const app = express();
 const port = process.env.PORT || 5000;
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 
+const verifyToken = (req, res, next) => {
+  // console.log("inside the verifyToken");
+  const token = req?.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: "Unauthorized Brother" });
+  }
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "Unauthorized Access Brother" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 //MONGODB
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wwkoz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -35,26 +54,30 @@ async function run() {
     //========================================= Queries =========================================//
     //getting data from the server
     app.get("/queries", async (req, res) => {
-        const cursor = recCollection.find();
-        const result = await cursor.toArray();
-        res.send(result);
-      });
-      // posting it to the server
+      const email = req.query.email;
+      let query = {};
+      if (email) {
+        query = { user_email: email };
+      }
+      const cursor = recCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    // posting it to the server
     app.post("/queries", async (req, res) => {
-        const newQuery = req.body;
-        console.log(newQuery);
-        const result = await recCollection.insertOne(newQuery);
-        res.send(result);
-      });
+      const newQuery = req.body;
+      console.log(newQuery);
+      const result = await recCollection.insertOne(newQuery);
+      res.send(result);
+    });
+    app.get("/query/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await recCollection.findOne(query);
+      res.send(result);
+    });
 
-
-
-
-
-
-
-
-      //========================================= USERS =========================================//
+    //========================================= USERS =========================================//
     //create new user
     app.post("/users", async (req, res) => {
       const newUser = req.body;
