@@ -86,6 +86,13 @@ async function run() {
       const result = await recCollection.findOne(query);
       res.send(result);
     });
+    //delete a data from the server
+    app.delete("/queries/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await recCollection.deleteOne(query);
+      res.send(result);
+    });
     // Increment recommendationCount
     app.patch("/queries/:id", async (req, res) => {
       const id = req.params.id;
