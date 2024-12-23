@@ -148,6 +148,13 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
+    //delete a data from the server
+    app.delete("/recommendations/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await recommendCollection.deleteOne(query);
+      res.send(result);
+    });
 
     //========================================= USERS =========================================//
     //create new user
