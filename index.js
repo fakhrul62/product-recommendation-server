@@ -48,7 +48,7 @@ async function run() {
       "Product Recommendation System is successfully connected to MongoDB!"
     );
 
-    const recCollection = client.db("recDB").collection("recs");
+    const queryCollection = client.db("recDB").collection("recs");
     const userCollection = client.db("recDB").collection("users");
     const recommendCollection = client.db("recDB").collection("recommend");
 
@@ -107,13 +107,13 @@ async function run() {
         query = { user_email: email };
       }
       
-      const cursor = recCollection.find(query);
+      const cursor = queryCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
     //home queries
     app.get("/queries-home", async (req, res) => {
-      const result = await recCollection
+      const result = await queryCollection
         .find()
         .sort({ _id: -1 })
         .limit(6)
@@ -124,20 +124,20 @@ async function run() {
     app.post("/queries", async (req, res) => {
       const newQuery = req.body;
       console.log(newQuery);
-      const result = await recCollection.insertOne(newQuery);
+      const result = await queryCollection.insertOne(newQuery);
       res.send(result);
     });
     app.get("/queries/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await recCollection.findOne(query);
+      const result = await queryCollection.findOne(query);
       res.send(result);
     });
     //delete a data from the server
     app.delete("/queries/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await recCollection.deleteOne(query);
+      const result = await queryCollection.deleteOne(query);
       res.send(result);
     });
     // Increment recommendationCount
@@ -147,7 +147,25 @@ async function run() {
       const updateDoc = {
         $inc: { recommendationCount: 1 },
       };
-      const result = await recCollection.updateOne(filter, updateDoc);
+      const result = await queryCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+    //update a data in the server
+    app.put("/queries/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateQuery = req.body;
+      const newQuery = {
+        $set: {
+          productName: updateQuery.productName,
+          productBrand: updateQuery.productBrand,
+          productImageUrl: updateQuery.productImageUrl,
+          queryTitle: updateQuery.queryTitle,
+          reasonDetails: updateQuery.reasonDetails,
+        },
+      };
+      const result = await queryCollection.updateOne(filter, newQuery, options);
       res.send(result);
     });
 
@@ -185,7 +203,7 @@ async function run() {
       const updateDoc = {
         $inc: { recommendationCount: -1 },
       };
-      await recCollection.updateOne(query, updateDoc);
+      await queryCollection.updateOne(query, updateDoc);
       const result = await recommendCollection.deleteOne(query);
       res.send(result);
     });
