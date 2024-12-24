@@ -52,6 +52,33 @@ async function run() {
     const userCollection = client.db("recDB").collection("users");
     const recommendCollection = client.db("recDB").collection("recommend");
 
+    //========================================= JWT =========================================//
+    // *Auth related api // JWT
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.JWT_SECRET,{ expiresIn: '24h' });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+    app.post("/jwt/logout", async (req, res) => {
+      const user = req.body;
+      console.log("logging out: ", user);
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+    //=========================================  =========================================//
+
+    //=========================================  =========================================//
     //========================================= Queries =========================================//
     //getting data from the server
     app.get("/queries", async (req, res) => {
@@ -74,49 +101,34 @@ async function run() {
       res.send(result);
     });
     // posting it to the server
-    app.post("/queries", async (req, res) => {
+    app.post("/queries",verifyToken, async (req, res) => {
       const newQuery = req.body;
       console.log(newQuery);
       const result = await recCollection.insertOne(newQuery);
       res.send(result);
     });
-    app.get("/queries/:id", async (req, res) => {
+    app.get("/queries/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await recCollection.findOne(query);
       res.send(result);
     });
     //delete a data from the server
-    app.delete("/queries/:id", async (req, res) => {
+    app.delete("/queries/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await recCollection.deleteOne(query);
       res.send(result);
     });
     // Increment recommendationCount
-    app.patch("/queries/:id", async (req, res) => {
+    app.patch("/queries/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
-      const incrementValue = req.body.increment || 1; // Default increment value is 1
-      try {
-        const filter = { _id: new ObjectId(id) };
-        const updateDoc = {
-          $inc: { recommendationCount: incrementValue },
-        };
-        const result = await recCollection.updateOne(filter, updateDoc);
-        if (result.modifiedCount > 0) {
-          res.send({
-            message: "Recommendation count incremented successfully",
-            result,
-          });
-        } else {
-          res.status(404).send({ message: "Query not found" });
-        }
-      } catch (error) {
-        console.error("Error incrementing recommendationCount:", error);
-        res
-          .status(500)
-          .send({ message: "Failed to increment recommendation count" });
-      }
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $inc: { recommendationCount: 1 },
+      };
+      const result = await recCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
 
     //========================================= RECOMMENDATIONS =========================================//
@@ -130,24 +142,26 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
-    app.get("/recommendations/:id", async (req, res) => {
+    app.get("/recommendations/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await recommendCollection.findOne(query);
       res.send(result);
     });
-
     // Add a new recommendation
-    app.post("/recommendations", async (req, res) => {
+    app.post("/recommendations",verifyToken, async (req, res) => {
       const newRecommendation = req.body;
       const result = await recommendCollection.insertOne(newRecommendation);
       res.send(result);
     });
-    
     //delete a data from the server
-    app.delete("/recommendations/:id", async (req, res) => {
+    app.delete("/recommendations/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $inc: { recommendationCount: -1 },
+      };
+      await recCollection.updateOne(query, updateDoc);
       const result = await recommendCollection.deleteOne(query);
       res.send(result);
     });
@@ -207,6 +221,14 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
+
+//=====================================
+
+//=====================================
+
+
+
+
   } finally {
   }
 }
