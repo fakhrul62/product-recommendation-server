@@ -9,7 +9,10 @@ const app = express();
 const port = process.env.PORT || 5000;
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173",
+      "https://product-recommendation-s-c2392.web.app",
+      "https://product-recommendation-s-c2392.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -17,7 +20,6 @@ app.use(express.json());
 app.use(cookieParser());
 
 const verifyToken = (req, res, next) => {
-  // console.log("inside the verifyToken");
   const token = req?.cookies?.token;
   if (!token) {
     return res.status(401).send({ message: "Unauthorized Brother" });
@@ -79,24 +81,7 @@ async function run() {
         .send({ success: true });
     });
     //=========================================  =========================================//
-    app.get("/recommendations-for-me", verifyToken, (req, res) => {
-      res.send({
-        message: "You have access to this protected route",
-        user: req.user,
-      });
-    });
-    app.get("/my-queries", verifyToken, (req, res) => {
-      res.send({
-        message: "You have access to this protected route",
-        user: req.user,
-      });
-    });
-    app.get("/recommendations-for-me", verifyToken, (req, res) => {
-      res.send({
-        message: "You have access to this protected route",
-        user: req.user,
-      });
-    });
+
     //=========================================  =========================================//
     //========================================= Queries =========================================//
     //getting data from the server
