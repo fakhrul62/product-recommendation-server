@@ -19,19 +19,33 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 
+// const verifyToken = (req, res, next) => {
+//   const token = req?.cookies?.token;
+//   if (!token) {
+//     return res.status(401).send({ message: "Unauthorized Brother" });
+//   }
+//   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+//     if (err) {
+//       return res.status(401).send({ message: "Unauthorized Access Brother" });
+//     }
+//     req.user = decoded;
+//     next();
+//   });
+// };
+
 const verifyToken = (req, res, next) => {
-  const token = req?.cookies?.token;
-  if (!token) {
-    return res.status(401).send({ message: "Unauthorized Brother" });
-  }
+  const token = req?.cookies?.token; // Try to get the token
+
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
+      // Handles cases where the token is missing or invalid
       return res.status(401).send({ message: "Unauthorized Access Brother" });
     }
-    req.user = decoded;
-    next();
+    req.user = decoded; // Assign decoded token to req.user
+    next(); // Proceed to the next middleware or route handler
   });
 };
+
 //MONGODB
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wwkoz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -85,7 +99,18 @@ async function run() {
     //=========================================  =========================================//
     //========================================= Queries =========================================//
     //getting data from the server
-    app.get("/queries",   async (req, res) => {
+    app.get("/queries", async (req, res) => {
+      const email = req.query.email;
+      let query = {};
+      if (email) {
+        query = { user_email: email };
+      }
+      
+      const cursor = queryCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+    app.get("/queries-email", verifyToken, async (req, res) => {
       const email = req.query.email;
       let query = {};
       if (email) {
@@ -112,21 +137,21 @@ async function run() {
       const result = await queryCollection.insertOne(newQuery);
       res.send(result);
     });
-    app.get("/queries/:id", async (req, res) => {
+    app.get("/queries/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await queryCollection.findOne(query);
       res.send(result);
     });
     //delete a data from the server
-    app.delete("/queries/:id", async (req, res) => {
+    app.delete("/queries/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await queryCollection.deleteOne(query);
       res.send(result);
     });
     // Increment recommendationCount
-    app.patch("/queries/:id", async (req, res) => {
+    app.patch("/queries/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
@@ -136,7 +161,7 @@ async function run() {
       res.send(result);
     });
     //update a data in the server
-    app.put("/queries/:id", async (req, res) => {
+    app.put("/queries/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
@@ -169,7 +194,7 @@ async function run() {
       const result = await cursor.toArray();
       res.send(result);
     });
-    app.get("/recommendations/:id", async (req, res) => {
+    app.get("/recommendations/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await recommendCollection.findOne(query);
@@ -182,7 +207,7 @@ async function run() {
       res.send(result);
     });
     //delete a data from the server
-    app.delete("/recommendations/:id", async (req, res) => {
+    app.delete("/recommendations/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updateDoc = {
